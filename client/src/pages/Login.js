@@ -6,7 +6,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../components/Toast';
 
 const isGitam = (e) =>
-  /@gitam\.(in|edu)$|@student\.gitam\.edu$/.test((e || '').toLowerCase());
+  /@gmail\.com$/.test((e || '').toLowerCase());
 
 const esc = (s) =>
   String(s || '')
@@ -100,7 +100,7 @@ const Login = () => {
           <div className="licon" style={{ width: '38px', height: '38px', fontSize: '17px' }}>G</div>
           <div>
             <div className="ltxt" style={{ fontSize: '15px', fontWeight: 700 }}>GITAM Academic Tracker</div>
-            <div className="lsub">Student Productivity System · v3.0</div>
+            <div className="lsub">Student Productivity System · </div>
           </div>
         </div>
 
@@ -111,18 +111,18 @@ const Login = () => {
           <>
           <div className="atit">Welcome back</div>
           <div className="asub">
-            Enter your GITAM email and password to continue
+            Enter your email and password to continue
           </div>
         
           {authErr && <div className="aerr">{authErr}</div>}
         
           <form onSubmit={handleLogin}>
             <div className="fg">
-              <label className="fl">GITAM Email Address</label>
+              <label className="fl">Enter Email Address</label>
               <input
                 type="email"
                 className="fi"
-                placeholder="yourname@gitam.in"
+                placeholder="yourname@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

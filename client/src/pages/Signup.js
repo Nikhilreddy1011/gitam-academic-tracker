@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../components/Toast';
 const isGitam = (e) =>
-  /@gitam\.(in|edu)$|@student\.gitam\.edu$|@gmail\.com$/.test(
+  /@gmail\.com$/.test(
     (e || '').toLowerCase()
   );
 
@@ -56,7 +56,7 @@ const Signup = () => {
     setAuthErr('');
     if (!email) { setAuthErr('Please enter your email address.'); return; }
     if (!isGitam(email)) {
-      setAuthErr('Only  email addresses are allowed.\nAccepted: @gitam.in · @gitam.edu · @student.gitam.edu .@gmail.com');
+      setAuthErr('Only  Gmail addresses are allowed.\nAccepted: @gmail.com');
       return;
     }
     setLoading(true);
@@ -183,7 +183,7 @@ const res = await authAPI.signup({
           <div className="licon" style={{ width: '38px', height: '38px', fontSize: '17px' }}>G</div>
           <div>
             <div className="ltxt" style={{ fontSize: '15px', fontWeight: 700 }}>GITAM Academic Tracker</div>
-            <div className="lsub">Student Productivity System · v3.0</div>
+            <div className="lsub">Student Productivity System </div>
           </div>
         </div>
 
@@ -193,20 +193,20 @@ const res = await authAPI.signup({
         {step === 'email' && (
           <>
             <div className="atit">Create your account</div>
-            <div className="asub">Register with your official GITAM email to get started</div>
+            <div className="asub">Register with your official email to get started</div>
             {authErr && <div className="aerr" style={{ whiteSpace: 'pre-line' }}>{authErr}</div>}
             {authOk  && <div className="aok">{authOk}</div>}
             <div className="fg">
-              <label className="fl">GITAM Email Address</label>
+              <label className="fl">Email Address</label>
               <input
                 id="emailInp" className="fi" type="email"
-                placeholder="yourname@gitam.in" value={email}
+                placeholder="yourname@gmail.com" value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendOtp()}
               />
               <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '5px', lineHeight: 1.5 }}>
                 ✓ Accepted:{' '}
-                {['@gitam.in','@gitam.edu','@student.gitam.edu'].map(d => (
+                {['@gmail.com'].map(d => (
                   <code key={d} style={{ background:'var(--bg3)',padding:'1px 5px',borderRadius:'3px',fontSize:'11px',marginRight:'4px' }}>{d}</code>
                 ))}
               </div>
@@ -231,7 +231,7 @@ const res = await authAPI.signup({
             {authErr && <div className="aerr">{authErr}</div>}
             {authOk  && <div className="aok" style={{ whiteSpace: 'pre-line' }}>{authOk}</div>}
             <div className="ainfo">
-              <strong>Full MERN app:</strong> OTP delivered via <strong>Nodemailer</strong>.
+              <strong>Full MERN app: OTP delivered to your mail</strong>.
             </div>
             <div className="otprow">
               {otpVals.map((v, i) => (
