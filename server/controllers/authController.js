@@ -55,11 +55,14 @@ exports.sendOtp = async (req, res) => {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-      }
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     });
 
     // ✅ Respond FIRST
-    res.json({ msg: "OTP generated", otp });
+    res.json({ msg: "OTP sent successfully" });
 
     // 🔥 Email in background
     transporter.sendMail({
@@ -225,7 +228,10 @@ exports.sendResetOtp = async (req, res) => {
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
   });
 
   transporter.sendMail({

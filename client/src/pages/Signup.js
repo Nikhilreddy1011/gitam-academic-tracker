@@ -62,11 +62,10 @@ const Signup = () => {
     setLoading(true);
     try {
       const res = await authAPI.sendOtp(email);
-      const demoOtp = res.data?.otp || res.data?.demo_otp || '';
-      setGenOtp(demoOtp);
+      setGenOtp("");
       setOtpExpiry(Date.now() + 10 * 60 * 1000);
       setStep('otp');
-      setAuthOk(`OTP sent to ${email}${demoOtp ? `\n\n🔑 Demo OTP: ${demoOtp}` : ''}`);
+      setAuthOk(`OTP sent to ${email}`);
       setOtpVals(['','','','','','']);
       setTimeout(() => document.getElementById('ot0')?.focus(), 50);
     } catch (err) {
@@ -90,12 +89,8 @@ const Signup = () => {
       setAuthOk('✓ Email verified successfully!');
       setStep('register');
     } catch (err) {
-      if (genOtp && entered === genOtp) {
-        setAuthOk('✓ Email verified successfully!');
-        setStep('register');
-      } else {
-        setAuthErr(err.response?.data?.message || 'Incorrect OTP. Please check and try again.');
-      }
+      setAuthErr(err.response?.data?.message || 'Incorrect OTP. Please check and try again.');
+      
     } finally {
       setLoading(false);
     }
@@ -165,10 +160,10 @@ const res = await authAPI.signup({
     setAuthErr(''); setAuthOk(''); setLoading(true);
     try {
       const res = await authAPI.sendOtp(email);
-      const demoOtp = res.data?.otp || res.data?.demo_otp || '';
-      setGenOtp(demoOtp); setOtpExpiry(Date.now() + 10 * 60 * 1000);
-      setOtpVals(['','','','','','']);
-      setAuthOk(`New OTP sent to ${email}${demoOtp ? `\n\n🔑 Demo OTP: ${demoOtp}` : ''}`);
+setGenOtp("");
+setOtpExpiry(Date.now() + 10 * 60 * 1000);
+setOtpVals(['','','','','','']);
+setAuthOk(`New OTP sent to ${email}`);
       setTimeout(() => { document.getElementById('ot0').value = ''; document.getElementById('ot0')?.focus(); }, 50);
     } catch { setAuthErr('Failed to resend OTP.'); }
     finally { setLoading(false); }
