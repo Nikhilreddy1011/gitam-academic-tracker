@@ -48,7 +48,6 @@ exports.sendOtp = async (req, res) => {
       expires: Date.now() + 600000
     });
 
-    // ✅ Create transporter FIRST
     const transporter = nodemailer.createTransport({
       host: "smtp-relay.brevo.com",
       port: 587,
@@ -59,17 +58,18 @@ exports.sendOtp = async (req, res) => {
       }
     });
 
-    // ✅ Send email
-    const info = await transporter.sendMail({
+    // ✅ Respond FIRST
+    res.json({ msg: "OTP generated", otp });
+
+    // 🔥 Email in background
+    transporter.sendMail({
       from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
       to: email,
       subject: "OTP Verification - Academic Tracker",
       text: `Your OTP is: ${otp}`
-    });
-
-    console.log("✅ EMAIL SENT:", info.response);
-
-    res.json({ msg: "OTP sent successfully" });
+    })
+    .then(info => console.log("✅ EMAIL SENT:", info.response))
+    .catch(err => console.error("❌ EMAIL ERROR:", err));
 
   } catch (err) {
     console.error("ERROR:", err);
