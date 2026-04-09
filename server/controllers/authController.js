@@ -55,7 +55,7 @@ exports.sendOtp = async (req, res) => {
 
     // 📧 Send email AFTER response (background)
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
+      host: "smtp-relay.brevo.com",
       port: 587,
       secure: false,
       auth: {
@@ -67,7 +67,7 @@ exports.sendOtp = async (req, res) => {
       if (error) {
         console.log("❌ SMTP ERROR:", error);
       } else {
-        console.log("✅ SMTP READY");
+        console.log("✅ BREVO SMTP READY");
       }
     });
 
@@ -242,7 +242,7 @@ exports.sendResetOtp = async (req, res) => {
   });
 
   transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: `"Academic Tracker" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: "OTP Verification",
     text: `Your OTP is: ${otp}`
@@ -253,7 +253,6 @@ exports.sendResetOtp = async (req, res) => {
   .catch(err => {
     console.error("❌ EMAIL FAILED:", err);
   });
-
   res.json({ msg: "Reset OTP sent to email" });
 };
 
