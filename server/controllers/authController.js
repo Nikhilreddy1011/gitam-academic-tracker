@@ -228,10 +228,17 @@ exports.sendResetOtp = async (req, res) => {
     }
   });
 
-  await transporter.sendMail({
+  transporter.sendMail({
+    from: process.env.EMAIL_USER,
     to: email,
-    subject: "Reset Password OTP",
-    text: `Your OTP is ${otp}`
+    subject: "OTP Verification",
+    text: `Your OTP is: ${otp}`
+  })
+  .then(info => {
+    console.log("✅ EMAIL SENT:", info.response);
+  })
+  .catch(err => {
+    console.error("❌ EMAIL FAILED:", err);
   });
 
   res.json({ msg: "Reset OTP sent to email" });
