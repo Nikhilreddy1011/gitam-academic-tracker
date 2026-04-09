@@ -1,4 +1,4 @@
-const Aptitude = require("../models/Aptitude");
+const Aptitude = require("../models/temp");
 const User = require("../models/User");
 
 // ================= UPDATE SCORE =================

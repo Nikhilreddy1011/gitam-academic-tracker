@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const Task = require("../models/Task");
 const Event = require("../models/Event");
-const Aptitude = require("../models/Aptitude");
+const Aptitude = require("../models/temp");
 
 exports.getDashboard = async (req, res) => {
   try {
