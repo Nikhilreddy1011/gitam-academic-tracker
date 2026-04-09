@@ -4,9 +4,10 @@ import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../components/Toast';
-
 const isGitam = (e) =>
-  /@gitam\.(in|edu)$|@student\.gitam\.edu$/.test((e || '').toLowerCase());
+  /@gitam\.(in|edu)$|@student\.gitam\.edu$|@gmail\.com$/.test(
+    (e || '').toLowerCase()
+  );
 
 function StepInd({ cur }) {
   const steps = [{ l: 'Email' }, { l: 'Verify OTP' }, { l: 'Register' }];
@@ -55,7 +56,7 @@ const Signup = () => {
     setAuthErr('');
     if (!email) { setAuthErr('Please enter your email address.'); return; }
     if (!isGitam(email)) {
-      setAuthErr('Only GITAM email addresses are allowed.\nAccepted: @gitam.in · @gitam.edu · @student.gitam.edu');
+      setAuthErr('Only  email addresses are allowed.\nAccepted: @gitam.in · @gitam.edu · @student.gitam.edu .@gmail.com');
       return;
     }
     setLoading(true);

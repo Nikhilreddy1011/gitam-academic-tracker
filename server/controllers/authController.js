@@ -7,9 +7,7 @@ const Token = require("../models/Token");
 
 // ================= EMAIL VALIDATION =================
 const allowedDomains = [
-  "@gitam.in",
-  "@gitam.edu",
-  "@student.gitam.edu"
+  "@gmail.com"
 ];
 
 const isValidGitamEmail = (email) => {
@@ -36,7 +34,7 @@ exports.sendOtp = async (req, res) => {
 
     if (!isValidGitamEmail(email)) {
       return res.status(400).json({
-        msg: "Only GITAM email IDs are allowed"
+        msg: "Only gmail are allowed"
       });
     }
 
@@ -50,19 +48,7 @@ exports.sendOtp = async (req, res) => {
       expires: Date.now() + 600000
     });
 
-    // 🔥 Respond immediately
-    const info = await transporter.sendMail({
-      from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
-      to: email,
-      subject: "OTP Verification - Academic Tracker",
-      text: `Your OTP is: ${otp}`
-    });
-    
-    console.log("✅ EMAIL SENT:", info.response);
-    
-    res.json({ msg: "OTP sent successfully" });
-
-    // 📧 Send email AFTER response (background)
+    // ✅ Create transporter FIRST
     const transporter = nodemailer.createTransport({
       host: "smtp-relay.brevo.com",
       port: 587,
@@ -72,26 +58,19 @@ exports.sendOtp = async (req, res) => {
         pass: process.env.EMAIL_PASS
       }
     });
-    transporter.verify((error, success) => {
-      if (error) {
-        console.log("❌ SMTP ERROR:", error);
-      } else {
-        console.log("✅ BREVO SMTP READY");
-      }
-    });
 
-    transporter.sendMail({
+    // ✅ Send email
+    const info = await transporter.sendMail({
       from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
       to: email,
       subject: "OTP Verification - Academic Tracker",
       text: `Your OTP is: ${otp}`
-    })
-    .then(info => {
-      console.log("✅ EMAIL SENT:", info.response);
-    })
-    .catch(err => {
-      console.error("❌ EMAIL FAILED:", err);
     });
+
+    console.log("✅ EMAIL SENT:", info.response);
+
+    res.json({ msg: "OTP sent successfully" });
+
   } catch (err) {
     console.error("ERROR:", err);
 
