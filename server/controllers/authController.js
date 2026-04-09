@@ -51,7 +51,16 @@ exports.sendOtp = async (req, res) => {
     });
 
     // 🔥 Respond immediately
-    res.json({ msg: "OTP is being sent..." });
+    const info = await transporter.sendMail({
+      from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
+      to: email,
+      subject: "OTP Verification - Academic Tracker",
+      text: `Your OTP is: ${otp}`
+    });
+    
+    console.log("✅ EMAIL SENT:", info.response);
+    
+    res.json({ msg: "OTP sent successfully" });
 
     // 📧 Send email AFTER response (background)
     const transporter = nodemailer.createTransport({
@@ -72,18 +81,17 @@ exports.sendOtp = async (req, res) => {
     });
 
     transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
       to: email,
       subject: "OTP Verification - Academic Tracker",
       text: `Your OTP is: ${otp}`
-    }).then(info => {
+    })
+    .then(info => {
       console.log("✅ EMAIL SENT:", info.response);
-    }).then(() => {
-      console.log("✅ EMAIL SENT:", info.response);
-    }).catch(err => {
-      console.error("EMAIL ERROR:", err);
+    })
+    .catch(err => {
+      console.error("❌ EMAIL FAILED:", err);
     });
-
   } catch (err) {
     console.error("ERROR:", err);
 
@@ -232,7 +240,7 @@ exports.sendResetOtp = async (req, res) => {
   });
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: "smtp-relay.brevo.com",
     port: 587,
     secure: false,
     auth: {
@@ -242,7 +250,7 @@ exports.sendResetOtp = async (req, res) => {
   });
 
   transporter.sendMail({
-    from: `"Academic Tracker" <${process.env.EMAIL_USER}>`,
+    from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
     to: email,
     subject: "OTP Verification",
     text: `Your OTP is: ${otp}`
