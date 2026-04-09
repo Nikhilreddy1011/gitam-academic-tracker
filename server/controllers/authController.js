@@ -11,7 +11,9 @@ const allowedDomains = [
 ];
 
 const isValidGitamEmail = (email) => {
-  return allowedDomains.some(domain => email.endsWith(domain));
+  return allowedDomains.some(domain =>
+    email.toLowerCase().endsWith(domain)
+  );
 };
 
 // ================= PASSWORD VALIDATION =================
@@ -30,7 +32,8 @@ const generateToken = (user) => {
 // ================= SEND OTP =================
 exports.sendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email.toLowerCase();
+    
 
     if (!isValidGitamEmail(email)) {
       return res.status(400).json({
@@ -85,11 +88,12 @@ exports.sendOtp = async (req, res) => {
 };
 // ================= VERIFY OTP =================
 exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const email = req.body.email.toLowerCase();
+  const otpVal = req.body.otp;
 
   const record = await OTP.findOne({
     email,
-    otp: otp.toString()
+    otp: otpVal.toString()
   });
 
   if (!record) return res.status(400).json({ msg: "Invalid OTP" });
@@ -99,21 +103,20 @@ exports.verifyOtp = async (req, res) => {
 
   res.json({ msg: "OTP verified" });
 };
-
 // ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
-    const {
-      email,
-      password,
-      confirmPassword,
-      name,
-      regNo,
-      branch,
-      batch,
-      phone,
-      otp
-    } = req.body;
+    const email = req.body.email.toLowerCase();
+const {
+  password,
+  confirmPassword,
+  name,
+  regNo,
+  branch,
+  batch,
+  phone,
+  otp
+} = req.body;
 
     if (!isValidGitamEmail(email)) {
       return res.status(400).json({
@@ -178,8 +181,8 @@ exports.signup = async (req, res) => {
 
 // ================= LOGIN =================
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-
+  const email = req.body.email.toLowerCase();
+const { password } = req.body;
   if (!isValidGitamEmail(email)) {
     return res.status(400).json({
       msg: "Only gmail.com are allowed"
@@ -203,7 +206,7 @@ exports.login = async (req, res) => {
 
 // ================= SEND RESET OTP =================
 exports.sendResetOtp = async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email.toLowerCase();
 
   if (!isValidGitamEmail(email)) {
     return res.status(400).json({
@@ -251,12 +254,18 @@ exports.sendResetOtp = async (req, res) => {
 
 // ================= RESET PASSWORD =================
 exports.resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  const email = req.body.email.toLowerCase();
+const { otp, newPassword } = req.body;
+const record = await OTP.findOne({
+  email
+}).sort({ createdAt: -1 }); // get latest OTP
+if (!record) return res.status(400).json({ msg: "Invalid OTP" });
 
-  const record = await OTP.findOne({
-    email,
-    otp: otp.toString()
-  });
+if (record.otp !== otpVal.toString())
+  return res.status(400).json({ msg: "Incorrect OTP" });
+
+if (Date.now() > record.expires)
+  return res.status(400).json({ msg: "OTP expired" });
 
   if (!record) return res.status(400).json({ msg: "Invalid OTP" });
 
