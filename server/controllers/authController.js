@@ -29,13 +29,11 @@ const generateToken = (user) => {
     expiresIn: "2h"
   });
 };
-
 // ================= SEND OTP =================
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // 🔒 GITAM email check
     if (!isValidGitamEmail(email)) {
       return res.status(400).json({
         msg: "Only GITAM email IDs are allowed"
@@ -44,44 +42,43 @@ exports.sendOtp = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Remove old OTPs
     await OTP.deleteMany({ email });
 
-    // Save new OTP
     await OTP.create({
       email,
       otp,
       expires: Date.now() + 600000
     });
 
-    // 📧 EMAIL CONFIG
+    // 🔥 Respond immediately
+    res.json({ msg: "OTP is being sent..." });
+
+    // 📧 Send email AFTER response (background)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER,   
-        pass: process.env.EMAIL_PASS    
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
     });
 
-    // 📧 SEND EMAIL
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER, // 🔥 ADD THIS
+    transporter.sendMail({
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "OTP Verification - Academic Tracker",
       text: `Your OTP is: ${otp}`
+    }).then(() => {
+      console.log("OTP email sent");
+    }).catch(err => {
+      console.error("EMAIL ERROR:", err);
     });
 
-    res.json({ msg: "OTP sent to your email" });
-
   } catch (err) {
-    // 🔥 VERY IMPORTANT DEBUG
-    console.error("EMAIL ERROR FULL:", err);
-    console.error("EMAIL:", process.env.EMAIL);
-    console.error("PASS EXISTS:", !!process.env.PASS);
+    console.error("ERROR:", err);
 
     res.status(500).json({
       msg: "Failed to send OTP",
-      error: err.message   // 🔥 show real error
+      error: err.message
     });
   }
 };
