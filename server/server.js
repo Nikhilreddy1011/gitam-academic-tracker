@@ -1,4 +1,6 @@
-require("dotenv").config({ path: __dirname + "/.env" });
+require("dotenv").config();
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
 const path = require("path");
 const fs = require("fs");
