@@ -65,17 +65,25 @@ exports.sendOtp = async (req, res) => {
     });
 
     // ✅ Respond FIRST
-    res.json({ msg: "OTP sent successfully" });
-
-    // 🔥 Email in background
-    transporter.sendMail({
-      from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
-      to: email,
-      subject: "OTP Verification - Academic Tracker",
-      text: `Your OTP is: ${otp}`
-    })
-    .then(info => console.log("✅ EMAIL SENT:", info.response))
-    .catch(err => console.error("❌ EMAIL ERROR:", err));
+    try {
+      const info = await transporter.sendMail({
+        from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
+        to: email,
+        subject: "OTP Verification - Academic Tracker",
+        text: "TEST EMAIL WORKING" // 🔥 TEMP TEST
+      });
+    
+      console.log("EMAIL SENT:", info.response);
+    
+      res.json({ msg: "OTP sent successfully" });
+    
+    } catch (err) {
+      console.error("EMAIL ERROR:", err);
+    
+      return res.status(500).json({
+        msg: "Failed to send OTP"
+      });
+    }
 
   } catch (err) {
     console.error("ERROR:", err);
