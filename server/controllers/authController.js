@@ -43,7 +43,7 @@ exports.sendOtp = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await OTP.deleteMany({ email });
+    await OTP.findOneAndDelete({ email });
 
     await OTP.create({
       email,
@@ -52,16 +52,11 @@ exports.sendOtp = async (req, res) => {
     });
 
     const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
+      }
     });
 
     // ✅ Respond FIRST
@@ -70,7 +65,7 @@ exports.sendOtp = async (req, res) => {
         from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
         to: email,
         subject: "OTP Verification - Academic Tracker",
-        text: "TEST EMAIL WORKING" // 🔥 TEMP TEST
+        text: `Your OTP is: ${otp}`
       });
     
       console.log("EMAIL SENT:", info.response);
@@ -99,15 +94,17 @@ exports.verifyOtp = async (req, res) => {
   const email = req.body.email.toLowerCase();
   const otpVal = req.body.otp;
 
-  const record = await OTP.findOne({
-    email,
-    otp: otpVal.toString()
-  });
+  const record = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
   if (!record) return res.status(400).json({ msg: "Invalid OTP" });
-
+  
+  if (record.otp !== otpVal.toString())
+    return res.status(400).json({ msg: "Incorrect OTP" });
+  
   if (Date.now() > record.expires)
     return res.status(400).json({ msg: "OTP expired" });
+
+
 
   res.json({ msg: "OTP verified" });
 };
@@ -174,7 +171,7 @@ const {
       phone: phone || ""
     });
 
-    await OTP.deleteMany({ email });
+    await OTP.findOneAndDelete({ email });
 
     const token = generateToken(user);
 
@@ -224,7 +221,7 @@ exports.sendResetOtp = async (req, res) => {
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  await OTP.deleteMany({ email });
+  await OTP.findOneAndDelete({ email });
 
   await OTP.create({
     email,
@@ -233,18 +230,12 @@ exports.sendResetOtp = async (req, res) => {
   });
 
   const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    }
   });
-
   transporter.sendMail({
     from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
     to: email,
@@ -263,27 +254,21 @@ exports.sendResetOtp = async (req, res) => {
 // ================= RESET PASSWORD =================
 exports.resetPassword = async (req, res) => {
   const email = req.body.email.toLowerCase();
-const { otp, newPassword } = req.body;
-const record = await OTP.findOne({
-  email
-}).sort({ createdAt: -1 }); // get latest OTP
-if (!record) return res.status(400).json({ msg: "Invalid OTP" });
+  const { otp, newPassword } = req.body;
 
-if (record.otp !== otpVal.toString())
-  return res.status(400).json({ msg: "Incorrect OTP" });
-
-if (Date.now() > record.expires)
-  return res.status(400).json({ msg: "OTP expired" });
+  const record = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
   if (!record) return res.status(400).json({ msg: "Invalid OTP" });
+
+  if (record.otp !== otp.toString())
+    return res.status(400).json({ msg: "Incorrect OTP" });
 
   if (Date.now() > record.expires)
     return res.status(400).json({ msg: "OTP expired" });
 
-  // 🔐 Password strength check
   if (!isStrongPassword(newPassword)) {
     return res.status(400).json({
-      msg: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+      msg: "Password must be strong"
     });
   }
 
