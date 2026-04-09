@@ -55,10 +55,19 @@ exports.sendOtp = async (req, res) => {
 
     // 📧 Send email AFTER response (background)
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+      }
+    });
+    transporter.verify((error, success) => {
+      if (error) {
+        console.log("❌ SMTP ERROR:", error);
+      } else {
+        console.log("✅ SMTP READY");
       }
     });
 
@@ -68,7 +77,7 @@ exports.sendOtp = async (req, res) => {
       subject: "OTP Verification - Academic Tracker",
       text: `Your OTP is: ${otp}`
     }).then(() => {
-      console.log("OTP email sent");
+      console.log("✅ EMAIL SENT:", info.response);
     }).catch(err => {
       console.error("EMAIL ERROR:", err);
     });
