@@ -6,7 +6,7 @@ const BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // ── Request interceptor: attach JWT token ──
