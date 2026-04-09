@@ -14,14 +14,14 @@ const c = require("../controllers/authController");
  * @swagger
  * /api/auth/send-otp:
  *   post:
- *     summary: Send OTP to GITAM email
+ *     summary: Send OTP to Gmail
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           example:
- *             email: user@gitam.in
+ *             email: user@gmail.com
  *     responses:
  *       200:
  *         description: OTP sent to email
@@ -40,7 +40,7 @@ router.post("/send-otp", c.sendOtp);
  *       content:
  *         application/json:
  *           example:
- *             email: user@gitam.in
+ *             email: user@gmail.com
  *             otp: "123456"
  *     responses:
  *       200:
@@ -60,7 +60,7 @@ router.post("/verify-otp", c.verifyOtp);
  *       content:
  *         application/json:
  *           example:
- *             email: user@gitam.in
+ *             email: user@gmail.com
  *             password: "Nikhil@123"
  *             confirmPassword: "Nikhil@123"
  *             name: "Nikhil"
@@ -86,7 +86,7 @@ router.post("/signup", c.signup);
  *       content:
  *         application/json:
  *           example:
- *             email: user@gitam.in
+ *             email: user@gmail.com
  *             password: "Nikhil@123"
  *     responses:
  *       200:

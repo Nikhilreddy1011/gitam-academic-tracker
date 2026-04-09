@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Empty = same origin (API + UI on one port, e.g. http://localhost:5000). Set REACT_APP_API_URL only if UI is on a different host.
-const BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+const BASE_URL = "https://gitam-academic-tracker.onrender.com";
 
 const api = axios.create({
   baseURL: BASE_URL,

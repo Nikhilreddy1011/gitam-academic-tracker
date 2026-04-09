@@ -114,7 +114,7 @@ exports.signup = async (req, res) => {
 
     if (!isValidGitamEmail(email)) {
       return res.status(400).json({
-        msg: "Only GITAM email IDs are allowed"
+        msg: "Only gmail.com are allowed"
       });
     }
 
@@ -179,7 +179,7 @@ exports.login = async (req, res) => {
 
   if (!isValidGitamEmail(email)) {
     return res.status(400).json({
-      msg: "Only GITAM email IDs are allowed"
+      msg: "Only gmail.com are allowed"
     });
   }
 
@@ -204,7 +204,7 @@ exports.sendResetOtp = async (req, res) => {
 
   if (!isValidGitamEmail(email)) {
     return res.status(400).json({
-      msg: "Only GITAM email IDs are allowed"
+      msg: "Only gmail.com are allowed"
     });
   }
 
