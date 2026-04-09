@@ -1,0 +1,16 @@
+{
+  "name": "academic-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GITAM Academic Tracker — React + Express (single port in production)",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm start --prefix client"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
