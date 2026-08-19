@@ -11,10 +11,14 @@ const nodemailer = require("nodemailer");
 //
 // EMAIL_HOST/EMAIL_PORT can be overridden to point at any other SMTP
 // provider (or back at Gmail) without touching this file.
+const port = Number(process.env.EMAIL_PORT) || 587;
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp-relay.brevo.com",
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
+  port,
+  // 465 is implicit TLS (secure from the start); 587/others use STARTTLS
+  // (secure: false, then upgrade). Getting this wrong causes the
+  // connection to hang until it times out rather than failing fast.
+  secure: port === 465,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
