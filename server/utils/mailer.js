@@ -1,21 +1,25 @@
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
 
-// Two ways to send mail, switchable with one env var so no code change is
-// needed when Brevo gets reinstated:
+// Three ways to send mail, switchable with one env var so no code change is
+// needed when a provider comes back online:
 //
-//   MAIL_PROVIDER=gmail  -> Gmail SMTP (needs EMAIL_USER = a real @gmail.com
-//                           address, EMAIL_PASS = its 16-char App Password
-//                           from Google Account -> Security -> App passwords)
-//   anything else/unset  -> Brevo HTTPS API (default; needs BREVO_API_KEY
-//                           and EMAIL_FROM, a verified Brevo sender)
-//
-// Brevo was chosen as the default because it's what this project's history
-// shows working previously and it sidesteps SMTP-port blocking (HTTPS on
-// port 443 instead). Gmail exists as a fallback for when a Brevo account is
-// suspended/unverified and sending needs to work immediately.
+//   MAIL_PROVIDER=gmail   -> Gmail SMTP. Doesn't work on hosts that block
+//                            outbound SMTP (this one does -- every SMTP
+//                            attempt here hangs until connectionTimeout
+//                            regardless of provider/port). Left in place in
+//                            case this ever runs somewhere SMTP isn't
+//                            blocked.
+//   MAIL_PROVIDER=resend  -> Resend HTTPS API (needs RESEND_API_KEY and
+//                            EMAIL_FROM). Works on this host: plain HTTPS,
+//                            not SMTP.
+//   anything else/unset   -> Brevo HTTPS API (default; needs BREVO_API_KEY
+//                            and EMAIL_FROM, a verified Brevo sender).
+//                            Currently suspended pending Brevo's account
+//                            review -- switch to resend or gmail meanwhile.
 const FROM_NAME = "GITAM Academic Tracker";
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const RESEND_API_URL = "https://api.resend.com/emails";
 const GMAIL_HOST = "smtp.gmail.com";
 
 const sendViaGmail = async ({ to, subject, text, html }) => {
@@ -92,7 +96,42 @@ const sendViaBrevoApi = async ({ to, subject, text, html }) => {
   return body; // { messageId: "..." }
 };
 
-const sendMail = (opts) =>
-  process.env.MAIL_PROVIDER === "gmail" ? sendViaGmail(opts) : sendViaBrevoApi(opts);
+const sendViaResend = async ({ to, subject, text, html }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM;
+
+  if (!apiKey) throw new Error("RESEND_API_KEY is not set");
+  if (!fromEmail) throw new Error("EMAIL_FROM is not set");
+
+  const res = await fetch(RESEND_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: `${FROM_NAME} <${fromEmail}>`,
+      to: [to],
+      subject,
+      text,
+      ...(html ? { html } : {})
+    })
+  });
+
+  const body = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(`Resend API error ${res.status}: ${body.message || JSON.stringify(body)}`);
+  }
+
+  return body; // { id: "..." }
+};
+
+const PROVIDERS = {
+  gmail: sendViaGmail,
+  resend: sendViaResend
+};
+
+const sendMail = (opts) => (PROVIDERS[process.env.MAIL_PROVIDER] || sendViaBrevoApi)(opts);
 
 module.exports = { sendMail };
