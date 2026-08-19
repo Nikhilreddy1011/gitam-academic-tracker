@@ -54,6 +54,9 @@ export const authAPI = {
   resetPassword: (token, newPassword, confirmPassword) =>
     api.post('/api/auth/reset-password', { token, newPassword, confirmPassword }),
 
+  changePassword: (currentPassword, newPassword, confirmPassword) =>
+    api.post('/api/auth/change-password', { currentPassword, newPassword, confirmPassword }),
+
   logout: () =>
     api.post('/api/auth/logout'),
 

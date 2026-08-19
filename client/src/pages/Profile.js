@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { profileAPI } from '../services/api';
+import { profileAPI, authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ToastContext } from '../components/Layout';
+import PasswordStrength, { getPasswordStrength } from '../components/PasswordStrength';
 
 const esc = (s) => String(s || '');
 const ini = (n) => (n || '').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -39,8 +39,7 @@ function EditRow({ label, field, type = 'text', draft, onChange }) {
 }
 
 const Profile = () => {
-  const navigate = useNavigate();
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const showToast = useContext(ToastContext);
 
   const [loading, setLoading]   = useState(true);
@@ -48,6 +47,14 @@ const Profile = () => {
   const [profEdit, setProfEdit] = useState(false);
   const [draft, setDraft]       = useState({});
   const [theme, setTheme]       = useState(() => localStorage.getItem('gat_theme') || 'dark');
+
+  // ── Change password (logged in, no OTP/logout) ──
+  const [pwdOpen, setPwdOpen]       = useState(false);
+  const [pwdSaving, setPwdSaving]   = useState(false);
+  const [pwdErr, setPwdErr]         = useState('');
+  const [pwdCurrent, setPwdCurrent] = useState('');
+  const [pwdNew, setPwdNew]         = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
 
   const fetchProfile = async (showLoader = false) => {
     if (showLoader) setLoading(true);
@@ -132,10 +139,37 @@ const Profile = () => {
     localStorage.setItem('gat_theme', next);
   };
 
-  const handleResetPassword = () => {
-    if (window.confirm('This will log you out and send an OTP to your email to reset your password. Continue?')) {
-      logout();
-      navigate('/login', { state: { resetMode: true } });
+  const openPwdForm = () => {
+    setPwdOpen(true);
+    setPwdErr('');
+    setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
+  };
+  const closePwdForm = () => {
+    setPwdOpen(false);
+    setPwdErr('');
+    setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
+  };
+
+  const submitChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdErr('');
+
+    if (!pwdCurrent) { setPwdErr('Enter your current password.'); return; }
+    if (!getPasswordStrength(pwdNew).meetsMinimum) {
+      setPwdErr('New password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+      return;
+    }
+    if (pwdNew !== pwdConfirm) { setPwdErr('New passwords do not match.'); return; }
+
+    setPwdSaving(true);
+    try {
+      await authAPI.changePassword(pwdCurrent, pwdNew, pwdConfirm);
+      showToast('Password updated successfully!', 'success');
+      closePwdForm();
+    } catch (err) {
+      setPwdErr(err.response?.data?.msg || err.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setPwdSaving(false);
     }
   };
 
@@ -266,21 +300,69 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Reset Password */}
+            {/* Update Password */}
             <div style={{ padding:'11px 0' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div>
-                  <div style={{ fontSize:'13px', fontWeight:500 }}>Reset Password</div>
-                  <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px' }}>OTP sent to your GITAM email</div>
+                  <div style={{ fontSize:'13px', fontWeight:500 }}>Update Password</div>
+                  <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px' }}>Change your password without logging out</div>
                 </div>
-                <button
-                  className="ibtn"
-                  style={{ width:'auto', padding:'7px 14px', fontSize:'12px', color:'var(--y3)', borderColor:'var(--y3)' }}
-                  onClick={handleResetPassword}
-                >
-                  🔑 Reset
-                </button>
+                {!pwdOpen && (
+                  <button
+                    className="ibtn"
+                    style={{ width:'auto', padding:'7px 14px', fontSize:'12px', color:'var(--y3)', borderColor:'var(--y3)' }}
+                    onClick={openPwdForm}
+                  >
+                    🔑 Update
+                  </button>
+                )}
               </div>
+
+              {pwdOpen && (
+                <form onSubmit={submitChangePassword} style={{ marginTop:'12px' }} autoComplete="off">
+                  {pwdErr && <div className="aerr" style={{ marginBottom:'10px' }}>{pwdErr}</div>}
+
+                  <div className="fg">
+                    <label className="fl">Current Password</label>
+                    <input
+                      type="password" className="fi" placeholder="Enter current password"
+                      value={pwdCurrent} onChange={(e) => setPwdCurrent(e.target.value)}
+                      autoFocus required
+                    />
+                  </div>
+
+                  <div className="fg">
+                    <label className="fl">New Password</label>
+                    <input
+                      type="password" className="fi" placeholder="8+ chars, mixed case, number, symbol"
+                      value={pwdNew} onChange={(e) => setPwdNew(e.target.value)}
+                      required
+                    />
+                    <PasswordStrength password={pwdNew} />
+                  </div>
+
+                  <div className="fg">
+                    <label className="fl">Confirm New Password</label>
+                    <input
+                      type="password" className="fi" placeholder="Repeat new password"
+                      value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)}
+                      required
+                    />
+                    {pwdConfirm && pwdNew !== pwdConfirm && (
+                      <div style={{ fontSize:'11px', color:'var(--red2)', marginTop:'4px' }}>Passwords do not match</div>
+                    )}
+                  </div>
+
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button type="submit" className="bp bgreen" style={{ flex:1 }} disabled={pwdSaving}>
+                      {pwdSaving ? '⏳ Updating...' : '💾 Update Password'}
+                    </button>
+                    <button type="button" className="bsec" style={{ flex:.6, margin:0 }} onClick={closePwdForm}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
 
