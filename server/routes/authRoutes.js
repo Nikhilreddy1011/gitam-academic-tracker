@@ -134,6 +134,29 @@ router.post("/forgot-password", c.forgotPassword);
  */
 router.post("/reset-password", c.resetPassword);
 
+// ===== CHANGE PASSWORD (logged-in user) =====
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change password for the logged-in user (verifies current password)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             currentPassword: "OldPass@123"
+ *             newPassword: "NewPass@123"
+ *             confirmPassword: "NewPass@123"
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ */
+router.post("/change-password", auth, c.changePassword);
+
 // ===== LOGOUT =====
 /**
  * @swagger

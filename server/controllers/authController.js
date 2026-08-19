@@ -298,6 +298,45 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// ================= CHANGE PASSWORD (logged-in user, no OTP) =================
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ msg: "All fields are required" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ msg: "New passwords do not match" });
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        msg: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) return res.status(400).json({ msg: "Current password is incorrect" });
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ msg: "New password must be different from your current password" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ msg: "Password updated successfully" });
+  } catch (err) {
+    console.error("ERROR:", err);
+    res.status(500).json({ msg: "Failed to update password" });
+  }
+};
+
 // ================= LOGOUT =================
 exports.logout = async (req, res) => {
   const authHeader = req.headers.authorization;
