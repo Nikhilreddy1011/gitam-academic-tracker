@@ -1,44 +1,47 @@
-const nodemailer = require("nodemailer");
-
-// Single shared transporter for all outgoing mail (OTP + password reset).
+// Sends mail via Brevo's HTTPS transactional-email API instead of raw SMTP.
 //
-// Render (and most cloud hosts) frequently can't authenticate directly against
-// smtp.gmail.com — Google flags datacenter IPs and silently drops/blocks the
-// login. Brevo's SMTP relay works reliably from cloud IPs and is what this
-// project has used successfully before, so it's the default here. Get free
-// SMTP credentials at https://app.brevo.com/settings/keys/smtp and put the
-// "SMTP login" in EMAIL_USER and the "SMTP key" in EMAIL_PASS.
+// SMTP (ports 587/465) kept hanging until timeout on this host regardless of
+// port — a common failure mode when a network path blocks/drops outbound
+// SMTP but leaves normal HTTPS untouched. The API call below is a plain
+// HTTPS POST on port 443, the same port everything else on this app already
+// uses successfully, so it isn't subject to that class of problem.
 //
-// EMAIL_HOST/EMAIL_PORT can be overridden to point at any other SMTP
-// provider (or back at Gmail) without touching this file.
-const port = Number(process.env.EMAIL_PORT) || 587;
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp-relay.brevo.com",
-  port,
-  // 465 is implicit TLS (secure from the start); 587/others use STARTTLS
-  // (secure: false, then upgrade). Getting this wrong causes the
-  // connection to hang until it times out rather than failing fast.
-  secure: port === 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
-
-// The "from" address must match (or be a verified sender/alias for) the
-// authenticated EMAIL_USER account, or providers will reject/flag the send.
+// Needs BREVO_API_KEY (Settings -> SMTP & API -> API Keys tab in Brevo,
+// "Generate a new API key" -- a different key from the SMTP login/key pair)
+// and EMAIL_FROM (a verified sender in Brevo).
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 const FROM_NAME = "GITAM Academic Tracker";
-const fromAddress = () =>
-  `"${FROM_NAME}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`;
 
-/**
- * Send an email. Always await this and handle rejection — callers should
- * not respond "sent" to the client until this resolves.
- */
-const sendMail = ({ to, subject, text, html }) =>
-  transporter.sendMail({ from: fromAddress(), to, subject, text, html });
+const sendMail = async ({ to, subject, text, html }) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM;
 
-module.exports = { transporter, sendMail };
+  if (!apiKey) throw new Error("BREVO_API_KEY is not set");
+  if (!fromEmail) throw new Error("EMAIL_FROM is not set");
+
+  const res = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({
+      sender: { name: FROM_NAME, email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      ...(html ? { htmlContent: html } : {})
+    })
+  });
+
+  const body = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(`Brevo API error ${res.status}: ${body.message || JSON.stringify(body)}`);
+  }
+
+  return body; // { messageId: "..." }
+};
+
+module.exports = { sendMail };
