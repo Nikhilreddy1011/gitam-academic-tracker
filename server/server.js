@@ -1,5 +1,10 @@
 require("dotenv").config();
 
+// This host has no IPv6 route. Node can otherwise pick an IPv6 address for
+// a dual-stack hostname (e.g. smtp.gmail.com) and fail fast with
+// ENETUNREACH instead of falling back to IPv4. Prefer IPv4 everywhere.
+require("dns").setDefaultResultOrder("ipv4first");
+
 const path = require("path");
 const fs = require("fs");
 const express = require("express");
