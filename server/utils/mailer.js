@@ -23,6 +23,10 @@ const sendViaGmail = async ({ to, subject, text, html }) => {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
     },
+    // Render's network has no IPv6 route, but smtp.gmail.com resolves to
+    // both an IPv4 and IPv6 address; without this, Node can pick the IPv6
+    // one and fail instantly with ENETUNREACH. Force IPv4.
+    family: 4,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000
