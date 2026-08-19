@@ -60,7 +60,7 @@ exports.sendOtp = async (req, res) => {
         text: `Your OTP is: ${otp}`
       });
 
-      console.log("EMAIL SENT:", info.response);
+      console.log("EMAIL SENT:", info.messageId || info);
 
       res.json({ msg: "OTP sent successfully" });
 
@@ -245,7 +245,7 @@ exports.forgotPassword = async (req, res) => {
         text: `We received a request to reset your password.\n\nClick the link below to choose a new password. This link expires in 30 minutes:\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
         html: `<p>We received a request to reset your password.</p><p><a href="${resetLink}">Click here to reset your password</a> (expires in 30 minutes).</p><p>If you didn't request this, you can safely ignore this email.</p>`
       });
-      console.log("EMAIL SENT:", info.response);
+      console.log("EMAIL SENT:", info.messageId || info);
     } catch (err) {
       console.error("EMAIL ERROR:", err);
       // Don't reveal delivery failure to the client — keeps the response
