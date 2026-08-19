@@ -8,6 +8,8 @@ import Login    from './pages/Login';
 import Signup   from './pages/Signup';
 import Register from './pages/Register';
 import OTP      from './pages/OTP';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword  from './pages/ResetPassword';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
@@ -32,6 +34,8 @@ const App = () => {
           <Route path="/signup"   element={<Signup />} />
           <Route path="/register" element={<Register />} />
           <Route path="/otp"      element={<OTP />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password"  element={<ResetPassword />} />
 
           {/* ── ROOT REDIRECT ── */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

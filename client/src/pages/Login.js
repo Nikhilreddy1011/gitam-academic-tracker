@@ -79,7 +79,7 @@ const Login = () => {
       showToast(`Welcome back, ${userData.name}!`, 'success');
       navigate('/dashboard');
     } catch (err) {
-      setAuthErr(err.response?.data?.message || 'Incorrect password. Please try again.');
+      setAuthErr(err.response?.data?.msg || err.response?.data?.message || 'Incorrect password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,12 @@ const Login = () => {
             </div>
         
             <div className="fg">
-              <label className="fl">Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="fl">Password</label>
+                <Link to="/forgot-password" style={{ fontSize: '11px', color: 'var(--accent3)' }}>
+                  Forgot password?
+                </Link>
+              </div>
               <div style={{ position: 'relative' }}>
   <input
     name="pass"
@@ -157,7 +162,7 @@ const Login = () => {
   </span>
 </div>
             </div>
-        
+
             <button type="submit" className="bp" disabled={loading}>
               {loading ? '⏳ Signing in...' : 'Sign In →'}
             </button>

@@ -1,9 +1,11 @@
+const crypto = require("crypto");
 const User = require("../models/User");
 const OTP = require("../models/OTP");
+const PasswordReset = require("../models/PasswordReset");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const Token = require("../models/Token");
+const { sendMail } = require("../utils/mailer");
 
 // ================= EMAIL VALIDATION =================
 const allowedDomains = [
@@ -51,30 +53,20 @@ exports.sendOtp = async (req, res) => {
       expires: Date.now() + 600000
     });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-
-    // ✅ Respond FIRST
     try {
-      const info = await transporter.sendMail({
-        from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
+      const info = await sendMail({
         to: email,
         subject: "OTP Verification - Academic Tracker",
         text: `Your OTP is: ${otp}`
       });
-    
+
       console.log("EMAIL SENT:", info.response);
-    
+
       res.json({ msg: "OTP sent successfully" });
-    
+
     } catch (err) {
       console.error("EMAIL ERROR:", err);
-    
+
       return res.status(500).json({
         msg: "Failed to send OTP"
       });
@@ -209,76 +201,101 @@ const { password } = req.body;
   res.json({ token, user: safeUser });
 };
 
-// ================= SEND RESET OTP =================
-exports.sendResetOtp = async (req, res) => {
-  const email = req.body.email.toLowerCase();
+// ================= FORGOT PASSWORD (send reset link) =================
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const hashToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
-  if (!isValidGitamEmail(email)) {
-    return res.status(400).json({
-      msg: "Only gmail.com are allowed"
-    });
-  }
+const resetBaseUrl = () =>
+  (process.env.CLIENT_URL ||
+    (process.env.CLIENT_ORIGIN || "http://localhost:3000").split(",")[0].trim());
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+exports.forgotPassword = async (req, res) => {
+  try {
+    const email = (req.body.email || "").toLowerCase();
 
-  await OTP.findOneAndDelete({ email });
-
-  await OTP.create({
-    email,
-    otp,
-    expires: Date.now() + 5 * 60 * 1000
-  });
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+    if (!isValidGitamEmail(email)) {
+      return res.status(400).json({ msg: "Only gmail.com are allowed" });
     }
-  });
-  transporter.sendMail({
-    from: '"GITAM Academic Tracker" <nikhilreddymodugu123@gmail.com>',
-    to: email,
-    subject: "OTP Verification",
-    text: `Your OTP is: ${otp}`
-  })
-  .then(info => {
-    console.log("✅ EMAIL SENT:", info.response);
-  })
-  .catch(err => {
-    console.error("❌ EMAIL FAILED:", err);
-  });
-  res.json({ msg: "Reset OTP sent to email" });
+
+    // Always return the same response whether or not the account exists,
+    // so this endpoint can't be used to enumerate registered emails.
+    const genericMsg = "If an account exists for that email, a reset link has been sent.";
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ msg: genericMsg });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+
+    await PasswordReset.deleteMany({ email });
+    await PasswordReset.create({
+      email,
+      tokenHash: hashToken(rawToken),
+      expires: new Date(Date.now() + RESET_TOKEN_TTL_MS)
+    });
+
+    const resetLink = `${resetBaseUrl()}/reset-password?token=${rawToken}`;
+
+    try {
+      const info = await sendMail({
+        to: email,
+        subject: "Reset your password - Academic Tracker",
+        text: `We received a request to reset your password.\n\nClick the link below to choose a new password. This link expires in 30 minutes:\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
+        html: `<p>We received a request to reset your password.</p><p><a href="${resetLink}">Click here to reset your password</a> (expires in 30 minutes).</p><p>If you didn't request this, you can safely ignore this email.</p>`
+      });
+      console.log("EMAIL SENT:", info.response);
+    } catch (err) {
+      console.error("EMAIL ERROR:", err);
+      // Don't reveal delivery failure to the client — keeps the response
+      // identical to the "no such account" case above.
+    }
+
+    res.json({ msg: genericMsg });
+  } catch (err) {
+    console.error("ERROR:", err);
+    res.status(500).json({ msg: "Failed to process request" });
+  }
 };
 
-// ================= RESET PASSWORD =================
+// ================= RESET PASSWORD (via emailed link token) =================
 exports.resetPassword = async (req, res) => {
-  const email = req.body.email.toLowerCase();
-  const { otp, newPassword } = req.body;
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
 
-  const record = await OTP.findOne({ email }).sort({ createdAt: -1 });
+    if (!token) return res.status(400).json({ msg: "Missing reset token" });
 
-  if (!record) return res.status(400).json({ msg: "Invalid OTP" });
+    if (!newPassword || newPassword !== confirmPassword) {
+      return res.status(400).json({ msg: "Passwords do not match" });
+    }
 
-  if (record.otp !== otp.toString())
-    return res.status(400).json({ msg: "Incorrect OTP" });
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        msg: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+      });
+    }
 
-  if (Date.now() > record.expires)
-    return res.status(400).json({ msg: "OTP expired" });
+    const record = await PasswordReset.findOne({ tokenHash: hashToken(token) });
 
-  if (!isStrongPassword(newPassword)) {
-    return res.status(400).json({
-      msg: "Password must be strong"
-    });
+    if (!record) return res.status(400).json({ msg: "Invalid or already-used reset link" });
+
+    if (Date.now() > new Date(record.expires).getTime()) {
+      await PasswordReset.deleteOne({ _id: record._id });
+      return res.status(400).json({ msg: "Reset link has expired. Please request a new one." });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await User.findOneAndUpdate({ email: record.email }, { password: hashed });
+
+    await PasswordReset.deleteMany({ email: record.email });
+
+    res.json({ msg: "Password updated successfully" });
+  } catch (err) {
+    console.error("ERROR:", err);
+    res.status(500).json({ msg: "Failed to reset password" });
   }
-
-  const hashed = await bcrypt.hash(newPassword, 10);
-
-  await User.findOneAndUpdate({ email }, { password: hashed });
-
-  await OTP.deleteMany({ email });
-
-  res.json({ msg: "Password updated successfully" });
 };
 
 // ================= LOGOUT =================
