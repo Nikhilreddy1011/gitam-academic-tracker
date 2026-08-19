@@ -94,6 +94,46 @@ router.post("/signup", c.signup);
  */
 router.post("/login", c.login);
 
+// ===== FORGOT PASSWORD (send reset link) =====
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Email a password-reset link to the user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             email: user@gmail.com
+ *     responses:
+ *       200:
+ *         description: Reset link sent (generic response whether or not the account exists)
+ */
+router.post("/forgot-password", c.forgotPassword);
+
+// ===== RESET PASSWORD (via emailed link token) =====
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password using the token from the reset-link email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             token: "raw-token-from-email-link"
+ *             newPassword: "Nikhil@123"
+ *             confirmPassword: "Nikhil@123"
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ */
+router.post("/reset-password", c.resetPassword);
+
 // ===== LOGOUT =====
 /**
  * @swagger

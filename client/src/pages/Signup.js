@@ -4,6 +4,7 @@ import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../components/Toast';
+import PasswordStrength, { getPasswordStrength } from '../components/PasswordStrength';
 const isGitam = (e) =>
   /@gmail\.com$/.test(
     (e || '').toLowerCase()
@@ -46,6 +47,7 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [authErr, setAuthErr] = useState('');
   const [authOk, setAuthOk]   = useState('');
+  const [passVal, setPassVal] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard');
@@ -69,7 +71,7 @@ const Signup = () => {
       setOtpVals(['','','','','','']);
       setTimeout(() => document.getElementById('ot0')?.focus(), 50);
     } catch (err) {
-      setAuthErr(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+      setAuthErr(err.response?.data?.msg || err.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ const Signup = () => {
       setAuthOk('✓ Email verified successfully!');
       setStep('register');
     } catch (err) {
-      setAuthErr(err.response?.data?.message || 'Incorrect OTP. Please check and try again.');
+      setAuthErr(err.response?.data?.msg || err.response?.data?.message || 'Incorrect OTP. Please check and try again.');
       
     } finally {
       setLoading(false);
@@ -113,7 +115,10 @@ const Signup = () => {
     if (!regNo)  { setAuthErr('Registration number is required.'); return; }
     if (!branch) { setAuthErr('Please select your branch.'); return; }
     if (!batch)  { setAuthErr('Batch is required (e.g., 2021-25).'); return; }
-    if (pass.length < 6) { setAuthErr('Password must be at least 6 characters.'); return; }
+    if (!getPasswordStrength(pass).meetsMinimum) {
+      setAuthErr('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+      return;
+    }
     if (pass !== pass2)  { setAuthErr('Passwords do not match.'); return; }
     if (!/^\d{6,}$/.test(regNo)) {
       setAuthErr('Registration number must be at least 6 digits and contain only numbers');
@@ -140,7 +145,7 @@ const res = await authAPI.signup({
       showToast(`Welcome to GITAM Academic Tracker, ${name}! 🎉`, 'success');
       navigate('/dashboard');
     } catch (err) {
-      setAuthErr(err.response?.data?.message || 'Registration failed. Please try again.');
+      setAuthErr(err.response?.data?.msg || err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -285,7 +290,14 @@ setAuthOk(`New OTP sent to ${email}`);
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div className="fg">
                   <label className="fl">Password *</label>
-                  <input name="pass" type="password" className="fi" placeholder="Min 6 characters" required />
+                  <input
+                    name="pass" type="password" className="fi"
+                    placeholder="8+ chars, mixed case, number, symbol"
+                    value={passVal}
+                    onChange={(e) => setPassVal(e.target.value)}
+                    required
+                  />
+                  <PasswordStrength password={passVal} />
                 </div>
                 <div className="fg">
                   <label className="fl">Confirm Password *</label>

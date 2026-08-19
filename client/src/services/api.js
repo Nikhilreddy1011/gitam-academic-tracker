@@ -48,6 +48,12 @@ export const authAPI = {
   login: (email, password) =>
     api.post('/api/auth/login', { email, password }),
 
+  forgotPassword: (email) =>
+    api.post('/api/auth/forgot-password', { email }),
+
+  resetPassword: (token, newPassword, confirmPassword) =>
+    api.post('/api/auth/reset-password', { token, newPassword, confirmPassword }),
+
   logout: () =>
     api.post('/api/auth/logout'),
 
