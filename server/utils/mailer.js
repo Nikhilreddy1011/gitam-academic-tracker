@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const dns = require("dns").promises;
 
 // Two ways to send mail, switchable with one env var so no code change is
 // needed when Brevo gets reinstated:
@@ -15,18 +16,34 @@ const nodemailer = require("nodemailer");
 // suspended/unverified and sending needs to work immediately.
 const FROM_NAME = "GITAM Academic Tracker";
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const GMAIL_HOST = "smtp.gmail.com";
 
 const sendViaGmail = async ({ to, subject, text, html }) => {
+  // This host has no IPv6 route. smtp.gmail.com is dual-stack, and neither
+  // family:4 nor a global dns.setDefaultResultOrder("ipv4first") stopped
+  // Node from picking its IPv6 address here (still failed with
+  // ENETUNREACH) -- some layer along the way must be requesting addresses
+  // with `verbatim` set, which bypasses that default. So: resolve the A
+  // (IPv4-only) record ourselves and connect to that literal address,
+  // removing the ambiguity entirely. `tls.servername` keeps TLS certificate
+  // validation working against the real hostname despite connecting by IP.
+  let connectHost = GMAIL_HOST;
+  try {
+    const addresses = await dns.resolve4(GMAIL_HOST);
+    if (addresses.length) connectHost = addresses[0];
+  } catch (err) {
+    console.warn("Could not resolve IPv4 address for smtp.gmail.com, falling back to hostname:", err.message);
+  }
+
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: connectHost,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
     },
-    // Render's network has no IPv6 route, but smtp.gmail.com resolves to
-    // both an IPv4 and IPv6 address; without this, Node can pick the IPv6
-    // one and fail instantly with ENETUNREACH. Force IPv4.
-    family: 4,
+    tls: { servername: GMAIL_HOST },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000
