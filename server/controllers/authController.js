@@ -43,6 +43,13 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        msg: "User already exists. Please sign in instead."
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     await OTP.findOneAndDelete({ email });
