@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Empty = same origin (API + UI on one port, e.g. http://localhost:5000). Set REACT_APP_API_URL only if UI is on a different host.
-const BASE_URL = "https://gitam-academic-tracker.onrender.com";
+// Empty = same origin (API + UI served from one place, e.g. the Vercel
+// deployment, or http://localhost:5000 via CRA's dev proxy). Set
+// REACT_APP_API_URL only if the UI is ever hosted on a different origin
+// than the API.
+const BASE_URL = process.env.REACT_APP_API_URL || "";
 
 const api = axios.create({
   baseURL: BASE_URL,

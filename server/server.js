@@ -79,14 +79,23 @@ app.use((err, req, res, next) => {
 });
 
 // ================= SERVER =================
-const PORT = Number(process.env.PORT) || 5000;
-const HOST = process.env.HOST || "0.0.0.0";
+// Vercel runs this file as a serverless function (it imports `app` and
+// invokes it per-request) rather than executing it as a long-lived
+// process, so app.listen() must be skipped there -- calling it would just
+// bind a port nothing will ever connect to. Everywhere else (local dev,
+// Render, a plain VPS) it runs exactly as before.
+if (!process.env.VERCEL) {
+  const PORT = Number(process.env.PORT) || 5000;
+  const HOST = process.env.HOST || "0.0.0.0";
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server on http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
-  if (hasClientBuild) {
-    console.log(`📱 React app + API (same port)`);
-  } else {
-    console.log(`📄 API only — Swagger: http://localhost:${PORT}/swagger`);
-  }
-});
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Server on http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
+    if (hasClientBuild) {
+      console.log(`📱 React app + API (same port)`);
+    } else {
+      console.log(`📄 API only — Swagger: http://localhost:${PORT}/swagger`);
+    }
+  });
+}
+
+module.exports = app;
