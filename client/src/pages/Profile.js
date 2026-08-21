@@ -119,7 +119,7 @@ const Profile = () => {
       });
 
       const updated = basicRes.data?.user || basicRes.data || draft;
-      updateUser({ ...draft, email: user.email, ...updated, email: user.email });
+      updateUser({ ...draft, ...updated, email: user.email });
       await fetchProfile(false);
       setProfEdit(false);
       showToast('Profile updated successfully!', 'success');
