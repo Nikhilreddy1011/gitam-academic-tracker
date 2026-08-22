@@ -74,10 +74,12 @@ const Profile = () => {
   useEffect(() => {
     fetchProfile(true);
 
-    // Keep profile/semester synced without manual refresh.
+    // Keep profile/semester synced without manual refresh -- but not while
+    // the tab is backgrounded, and not every 10s (each tick is a real API
+    // call/serverless invocation; polling that aggressively adds up fast).
     const interval = setInterval(() => {
-      if (!profEdit) fetchProfile(false);
-    }, 10000);
+      if (!profEdit && document.visibilityState === 'visible') fetchProfile(false);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
