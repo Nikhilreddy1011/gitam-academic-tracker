@@ -85,9 +85,14 @@ const Dashboard = () => {
     fetchAll();
   }, [location.pathname]);
 
-  // 🔥 AUTO REFRESH
+  // 🔥 AUTO REFRESH -- not while backgrounded, and not every 10s. Each tick
+  // fires 6 parallel API calls; on a serverless host those can each hit a
+  // separate cold function instance, so polling this aggressively was
+  // actively making the app feel slower, not keeping it fresher.
   useEffect(() => {
-    const interval = setInterval(fetchAll, 10000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAll();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 

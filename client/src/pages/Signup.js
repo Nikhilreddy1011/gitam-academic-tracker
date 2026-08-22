@@ -161,6 +161,23 @@ const res = await authAPI.signup({
     if (e.key === 'Backspace' && !otpVals[i] && i > 0) document.getElementById(`ot${i - 1}`)?.focus();
     if (e.key === 'Enter') verifyOtp();
   };
+  // `maxLength={1}` makes the browser truncate a pasted string to 1 char
+  // before onChange ever sees it, so plain paste-into-a-box silently loses
+  // the rest of the code. Intercept the paste event directly instead.
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const digits = (e.clipboardData || window.clipboardData)
+      .getData('text')
+      .replace(/[^0-9]/g, '')
+      .slice(0, 6)
+      .split('');
+    if (!digits.length) return;
+    const next = ['', '', '', '', '', ''];
+    digits.forEach((d, idx) => { next[idx] = d; });
+    setOtpVals(next);
+    const focusIdx = Math.min(digits.length, 5);
+    setTimeout(() => document.getElementById(`ot${focusIdx}`)?.focus(), 0);
+  };
   const resendOtp = async () => {
     setAuthErr(''); setAuthOk(''); setLoading(true);
     try {
@@ -239,6 +256,7 @@ setAuthOk(`New OTP sent to ${email}`);
                   inputMode="numeric" value={v}
                   onChange={(e) => handleOtpInput(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeydown(i, e)}
+                  onPaste={handleOtpPaste}
                 />
               ))}
             </div>
